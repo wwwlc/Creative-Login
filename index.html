@@ -1,0 +1,793 @@
+﻿<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录页</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: Inter, sans-serif; }
+    body { background: #F3F4FC; color: #1E2A45; }
+    .page { min-height: 100vh; max-height: 100vh; display: grid; grid-template-columns: 1fr; }
+    @media (min-width: 1024px) { .page { grid-template-columns: 1fr 1fr; } }
+
+    .left {
+      position: relative;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #3263FD, #4A8EFF, #5EBCFF);
+      padding: 48px;
+      overflow: hidden;
+    }
+    @media (min-width: 1024px) { .left { display: flex; } }
+
+    .brand { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 10px; color: #0f172a; text-decoration: none; font-weight: 700; font-size: 32px; }
+    .brand img { width: 32px; height: 32px; background: rgba(255,255,255,.18); backdrop-filter: blur(5px); padding: 4px; border-radius: 8px; }
+    .brand span { font-size: 34px; }
+
+    .characters-wrap { position: relative; z-index: 2; display: flex; align-items: end; justify-content: center; height: 500px; }
+    .characters { position: relative; width: 550px; height: 400px; transform: translateY(-128px); }
+
+    .char { position: absolute; bottom: 0; transform-origin: bottom center; transition: transform .45s ease-in-out, left .45s ease-in-out, top .45s ease-in-out, height .45s ease-in-out; }
+    .char[role="button"] { cursor: pointer; }
+    .char[role="button"]:focus-visible { outline: 2px solid #dbeafe; outline-offset: 4px; }
+    .purple { left: 70px; width: 180px; height: 400px; background: #6C3FF5; border-radius: 10px 10px 0 0; z-index: 1; }
+    .black { left: 240px; width: 120px; height: 310px; background: #2D2D2D; border-radius: 8px 8px 0 0; z-index: 2; }
+    .orange { left: 0; width: 240px; height: 200px; background: #FF9B6B; border-radius: 120px 120px 0 0; z-index: 3; }
+    .yellow { left: 310px; width: 140px; height: 230px; background: #E8D754; border-radius: 70px 70px 0 0; z-index: 4; }
+
+    .eyes { position: absolute; display: flex; }
+    .eye { width: 18px; height: 18px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: height .15s ease; }
+    .eye.black-eye { width: 16px; height: 16px; }
+    .pupil { width: 7px; height: 7px; border-radius: 50%; background: #0f172a; transform: translate(0, 0); transition: transform .1s ease-out; }
+    .pupil.black-pupil { width: 6px; height: 6px; }
+    .dot-eyes { position: absolute; display: flex; gap: 24px; }
+    .dot-eye { width: 12px; height: 12px; border-radius: 50%; background: #0f172a; transition: transform .1s ease-out; }
+    .yellow-mouth { position: absolute; width: 80px; height: 4px; background: #0f172a; border-radius: 999px; }
+
+    .purple-eyes { left: 45px; top: 40px; gap: 32px; transition: all .7s ease-in-out; }
+    .black-eyes { left: 26px; top: 32px; gap: 24px; transition: all .7s ease-in-out; }
+    .orange-eyes { left: 82px; top: 90px; transition: all .2s ease-out; }
+    .yellow-eyes { left: 52px; top: 40px; transition: all .2s ease-out; }
+    .yellow-mouth { left: 40px; top: 88px; transition: all .2s ease-out; }
+    .speech-bubble {
+      position: absolute; top: -58px; left: 50%; transform: translateX(-50%);
+      min-width: 44px; text-align: center; padding: 6px 10px;
+      border-radius: 999px; background: rgba(11,18,32,.9); color: #cdd8e8;
+      font-size: 16px; border: 1px solid rgba(157,176,200,.55); opacity: 0;
+      pointer-events: none; transition: opacity .2s ease-out, transform .2s ease-out;
+    }
+    .speech-bubble.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    .ripple {
+      position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) scale(.2);
+      width: 40px; height: 40px; border-radius: 999px; pointer-events: none;
+      border: 2px solid rgba(214,231,255,.85); opacity: 0;
+    }
+    .confetti-layer {
+      position: absolute; inset: 0; pointer-events: none; z-index: 6;
+      overflow: visible;
+    }
+    .confetti-dot {
+      position: absolute; width: 8px; height: 8px; border-radius: 999px; opacity: 0;
+      background: #93c5fd;
+    }
+    .left.easter-pulse {
+      animation: easterPulse 1s ease-out;
+    }
+
+    @keyframes purpleClickPose {
+      0% { transform: var(--char-base-transform, skewX(0deg)); filter: brightness(1); }
+      28% { transform: translateY(-8px) skewX(0deg) scaleY(1.04); filter: brightness(1.2); box-shadow: 0 0 0 rgba(173,216,255,0); }
+      100% { transform: var(--char-base-transform, skewX(0deg)); filter: brightness(1); box-shadow: 0 0 0 rgba(173,216,255,0); }
+    }
+    @keyframes purpleGlow {
+      0% { box-shadow: 0 0 0 rgba(173,216,255,0); }
+      35% { box-shadow: 0 0 36px rgba(173,216,255,.85); }
+      100% { box-shadow: 0 0 0 rgba(173,216,255,0); }
+    }
+    @keyframes blackLeanBack {
+      0% { transform: var(--char-base-transform, skewX(0deg)); }
+      35% { transform: translateY(-6px) skewX(14deg) translateX(16px); }
+      100% { transform: var(--char-base-transform, skewX(0deg)); }
+    }
+    @keyframes orangeBounce {
+      0% { transform: var(--char-base-transform, skewX(0deg)); }
+      25% { transform: translateY(-16px) scaleY(1.04) var(--char-base-skew, skewX(0deg)); }
+      50% { transform: translateY(0px) scaleY(.98) var(--char-base-skew, skewX(0deg)); }
+      75% { transform: translateY(-9px) scaleY(1.02) var(--char-base-skew, skewX(0deg)); }
+      100% { transform: var(--char-base-transform, skewX(0deg)); }
+    }
+    @keyframes orangeRipple {
+      0% { opacity: 0; transform: translateX(-50%) scale(.2); }
+      25% { opacity: .95; }
+      100% { opacity: 0; transform: translateX(-50%) scale(3.3); }
+    }
+    @keyframes yellowSmile {
+      0%, 100% { width: 80px; height: 4px; border-radius: 999px; transform: translateY(0); clip-path: inset(0 0 0 0); }
+      30% { width: 62px; height: 12px; border-radius: 0 0 999px 999px; transform: translateY(6px); clip-path: inset(0 0 42% 0); }
+      65% { width: 68px; height: 10px; border-radius: 0 0 999px 999px; transform: translateY(4px); clip-path: inset(0 0 38% 0); }
+    }
+    @keyframes easterPulse {
+      0% { filter: brightness(1); }
+      30% { filter: brightness(1.14); }
+      100% { filter: brightness(1); }
+    }
+    @keyframes confettiPop {
+      0% { opacity: 0; transform: translate(0, 0) scale(.4); }
+      12% { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+    }
+
+    .footer-links { display: none; }
+
+    .grid-bg {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .blob { position: absolute; border-radius: 999px; filter: blur(56px); }
+    .blob1 { top: 25%; right: 25%; width: 256px; height: 256px; background: rgba(79,105,138,.22); }
+    .blob2 { bottom: 25%; left: 25%; width: 384px; height: 384px; background: rgba(133,153,178,.24); }
+
+     .right { display: flex; align-items: center; justify-content: center; padding: 32px; background: #F3F4FC; }
+    .panel { width: 100%; max-width: 420px; }
+
+    .mobile-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 48px; font-size: 18px; font-weight: 600; }
+    .mobile-brand img { width: 32px; height: 32px; }
+    @media (min-width: 1024px) { .mobile-brand { display: none; } }
+
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { font-size: 48px; line-height: 1.1; margin: 0 0 8px; font-weight: 800; }
+     .header p { margin: 0; color: #8A93AC; font-size: 29px; }
+
+    .field { margin-bottom: 20px; }
+     .field label { display: block; margin-bottom: 8px; font-size: 34px; font-weight: 600; color: #1E2A45; }
+    .input-wrap { position: relative; }
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%; height: 48px; padding: 0 16px; border: 1px solid #D7DBE0; border-radius: 999px;
+      background: #FFFFFF; color: #1E2A45; outline: none; font-size: 16px;
+    }
+    input::placeholder { color: #8A93AC; }
+    input:focus { border-color: #3263FD; box-shadow: 0 0 0 2px rgba(50,99,253,.18); }
+    .input-flash {
+      animation: inputFlash .42s ease;
+    }
+    @keyframes inputFlash {
+      0% { box-shadow: 0 0 0 0 rgba(50,99,253,0); border-color: #D7DBE0; }
+      35% { box-shadow: 0 0 0 3px rgba(50,99,253,.35); border-color: #3263FD; }
+      100% { box-shadow: 0 0 0 0 rgba(50,99,253,0); border-color: #D7DBE0; }
+    }
+    .toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: transparent; border: none; color: #9db0c8; cursor: pointer; font-size: 14px;
+    }
+
+    .error { margin-top: 8px; color: #ef4444; font-size: 16px; display: none; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .remember { display: flex; align-items: center; gap: 8px; }
+    .remember label { font-size: 16px; color: #dde6f2; }
+    .remember input { width: 16px; height: 16px; }
+     .forgot { color: #3263FD; text-decoration: none; font-size: 16px; }
+
+    .error-box { display: none; margin-bottom: 16px; padding: 12px; border-radius: 12px; border: 1px solid #7f1d1d; background: rgba(127,29,29,.2); color: #fca5a5; font-size: 14px; }
+
+     .btn { width: 100%; height: 48px; border-radius: 999px; border: 1px solid #3263FD; background: linear-gradient(180deg, #3263FD, #5EBCFF); color: #FFFFFF; font-size: 34px; font-weight: 700; cursor: pointer;
+      position: relative; overflow: hidden; margin-bottom: 12px;
+    }
+    .btn:hover { border-color: #3263FD; filter: brightness(1.05); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+     .signup { text-align: center; margin-top: 28px; color: #8A93AC; font-size: 16px; }
+     .signup a { color: #3263FD; text-decoration: none; font-weight: 600; }
+
+    /* Big-scale match for screenshot proportions on wide screens */
+    @media (min-width: 1300px) {
+      .header h1 { font-size: 42px; }
+      .header p, .field label, .btn, .brand, .footer-links { transform: scale(1); transform-origin: left center; }
+      .header { margin-left: 75px; }
+      .field label { transform-origin: left top; }
+      .btn { transform-origin: center; }
+      .footer-links { transform-origin: left bottom; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="left">
+      <a href="/" class="brand">
+        <img src="https://i.postimg.cc/nLrDYrHW/icon.png" alt="登录页图标" />
+        <span>登录页</span>
+      </a>
+
+      <div class="characters-wrap">
+        <div class="characters" id="characters">
+          <div class="char purple" id="purple" role="button" tabindex="0" aria-label="蓝色主角交互">
+            <div class="eyes purple-eyes">
+              <div class="eye"><div class="pupil"></div></div>
+              <div class="eye"><div class="pupil"></div></div>
+            </div>
+          </div>
+          <div class="char black" id="black" role="button" tabindex="0" aria-label="深蓝角色交互">
+            <div class="speech-bubble" id="blackBubble">...</div>
+            <div class="eyes black-eyes">
+              <div class="eye black-eye"><div class="pupil black-pupil"></div></div>
+              <div class="eye black-eye"><div class="pupil black-pupil"></div></div>
+            </div>
+          </div>
+          <div class="char orange" id="orange" role="button" tabindex="0" aria-label="左侧半圆角色交互">
+            <div class="ripple" id="orangeRipple"></div>
+            <div class="dot-eyes orange-eyes">
+              <div class="dot-eye"></div>
+              <div class="dot-eye"></div>
+            </div>
+          </div>
+          <div class="char yellow" id="yellow" role="button" tabindex="0" aria-label="右侧圆头角色交互">
+            <div class="dot-eyes yellow-eyes">
+              <div class="dot-eye"></div>
+              <div class="dot-eye"></div>
+            </div>
+            <div class="yellow-mouth"></div>
+          </div>
+          <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="grid-bg"></div>
+      <div class="blob blob1"></div>
+      <div class="blob blob2"></div>
+    </section>
+
+    <section class="right">
+      <div class="panel">
+        <div class="mobile-brand">
+          <img src="https://i.postimg.cc/nLrDYrHW/icon.png" alt="登录页图标" />
+          <span>登录页</span>
+        </div>
+
+        <div class="header">
+          <h1>欢迎回来！</h1>
+        </div>
+
+        <form id="loginForm">
+          <div class="field">
+            <label for="email">邮箱</label>
+            <div class="input-wrap">
+              <input id="email" type="email" placeholder="请输入邮箱" autocomplete="off" />
+            </div>
+            <div id="emailError" class="error"></div>
+          </div>
+
+          <div class="field">
+            <label for="password">密码</label>
+            <div class="input-wrap">
+              <input id="password" type="password" placeholder="请输入密码" />
+              <button type="button" id="togglePassword" class="toggle">显示</button>
+            </div>
+            <div id="passwordError" class="error"></div>
+          </div>
+
+          <div class="row">
+            <a class="forgot" href="/forgot-password">忘记密码？</a>
+          </div>
+
+          <div id="loginError" class="error-box"></div>
+
+          <button id="loginBtn" type="submit" class="btn">登录</button>
+        </form>
+
+        <div class="signup">
+          还没有账号？
+          <a href="#">立即注册</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginForm = document.getElementById("loginForm");
+    const loginBtn = document.getElementById("loginBtn");
+    const togglePassword = document.getElementById("togglePassword");
+    const emailError = document.getElementById("emailError");
+    const passwordError = document.getElementById("passwordError");
+    const loginError = document.getElementById("loginError");
+
+    const purple = document.getElementById("purple");
+    const black = document.getElementById("black");
+    const orange = document.getElementById("orange");
+    const yellow = document.getElementById("yellow");
+    const purpleEyes = purple.querySelector(".purple-eyes");
+    const blackEyes = black.querySelector(".black-eyes");
+    const orangeEyes = orange.querySelector(".orange-eyes");
+    const yellowEyes = yellow.querySelector(".yellow-eyes");
+    const yellowMouth = yellow.querySelector(".yellow-mouth");
+    const blackBubble = document.getElementById("blackBubble");
+    const orangeRipple = document.getElementById("orangeRipple");
+    const confettiLayer = document.getElementById("confettiLayer");
+    const leftPane = document.querySelector(".left");
+    const purpleEyeNodes = [...purple.querySelectorAll(".eye")];
+    const blackEyeNodes = [...black.querySelectorAll(".eye")];
+    const purplePupils = [...purple.querySelectorAll(".pupil")];
+    const blackPupils = [...black.querySelectorAll(".pupil")];
+    const orangeDots = [...orange.querySelectorAll(".dot-eye")];
+    const yellowDots = [...yellow.querySelectorAll(".dot-eye")];
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let isTyping = false;
+    let showPassword = false;
+    let isLookingAtEachOther = false;
+    let isPurplePeeking = false;
+    let purplePeekTimer = null;
+    let forcedLookUntil = 0;
+    let forcedLook = { x: 0, y: 0 };
+    const ACTIVE_EASTER_EGG = true;
+    const CLICK_COOLDOWN_MS = 350;
+    const EASTER_WINDOW_MS = 2500;
+    const EASTER_COOLDOWN_MS = 4000;
+    const activeAnimations = new Set();
+    const cooldownMap = new Map();
+    const clickHistory = [];
+    let easterCooldownUntil = 0;
+
+    function setError(el, message) {
+      if (!message) {
+        el.textContent = "";
+        el.style.display = "none";
+        return;
+      }
+      el.textContent = message;
+      el.style.display = "block";
+    }
+
+    function validateForm(email, password) {
+      let valid = true;
+      setError(emailError, "");
+      setError(passwordError, "");
+      setError(loginError, "");
+
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        setError(emailError, "请输入有效的邮箱地址。");
+        valid = false;
+      }
+      if (!password || password.length < 6) {
+        setError(passwordError, "密码至少需要 6 位。");
+        valid = false;
+      }
+      return valid;
+    }
+
+    function focusAndFlashInput(inputEl) {
+      inputEl.focus();
+      inputEl.classList.remove("input-flash");
+      void inputEl.offsetWidth;
+      inputEl.classList.add("input-flash");
+      setTimeout(() => inputEl.classList.remove("input-flash"), 450);
+    }
+
+    function routeToDashboard() {
+      window.location.href = "/dashboard";
+    }
+
+    function setTypingState(value) {
+      if (value && !isTyping) {
+        isLookingAtEachOther = true;
+        setTimeout(() => {
+          isLookingAtEachOther = false;
+          updateCharacters();
+        }, 800);
+      }
+      isTyping = value;
+      updateCharacters();
+    }
+
+    function schedulePurplePeek() {
+      if (purplePeekTimer) clearTimeout(purplePeekTimer);
+      const canPeek = passwordInput.value.length > 0 && showPassword;
+      if (!canPeek) {
+        isPurplePeeking = false;
+        updateCharacters();
+        return;
+      }
+      const delay = Math.random() * 1400 + 700;
+      purplePeekTimer = setTimeout(() => {
+        isPurplePeeking = true;
+        updateCharacters();
+        setTimeout(() => {
+          isPurplePeeking = false;
+          updateCharacters();
+          schedulePurplePeek();
+        }, 420);
+      }, delay);
+    }
+
+    function scheduleBlink(eyeNodes) {
+      const delay = Math.random() * 1800 + 900;
+      setTimeout(() => {
+        eyeNodes.forEach((eye) => (eye.style.height = "2px"));
+        setTimeout(() => {
+          eyeNodes.forEach((eye) => {
+            eye.style.height = eye.classList.contains("black-eye") ? "16px" : "18px";
+          });
+          scheduleBlink(eyeNodes);
+        }, 90);
+      }, delay);
+    }
+
+    function calculatePosition(node) {
+      const rect = node.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 3;
+      const deltaX = mouseX - centerX;
+      const deltaY = mouseY - centerY;
+      return {
+        faceX: Math.max(-15, Math.min(15, deltaX / 20)),
+        faceY: Math.max(-10, Math.min(10, deltaY / 30)),
+        bodySkew: Math.max(-6, Math.min(6, -deltaX / 120)),
+      };
+    }
+
+    function movePupil(pupilNode, eyeNode, maxDistance, forceX, forceY) {
+      if (forceX !== undefined && forceY !== undefined) {
+        pupilNode.style.transform = `translate(${forceX}px, ${forceY}px)`;
+        return;
+      }
+      const rect = eyeNode.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const deltaX = mouseX - cx;
+      const deltaY = mouseY - cy;
+      const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), maxDistance);
+      const angle = Math.atan2(deltaY, deltaX);
+      pupilNode.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+    }
+
+    function moveDot(dotNode, forceX, forceY) {
+      if (forceX !== undefined && forceY !== undefined) {
+        dotNode.style.transform = `translate(${forceX}px, ${forceY}px)`;
+        return;
+      }
+      const rect = dotNode.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const deltaX = mouseX - cx;
+      const deltaY = mouseY - cy;
+      const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), 5);
+      const angle = Math.atan2(deltaY, deltaX);
+      dotNode.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+    }
+
+    function isAnimActive(name) {
+      return activeAnimations.has(name);
+    }
+
+    function playTransientAnimation(name, duration, startFn, endFn) {
+      activeAnimations.add(name);
+      startFn();
+      setTimeout(() => {
+        endFn();
+        activeAnimations.delete(name);
+      }, duration);
+    }
+
+    function triggerPurpleDoubleBlink() {
+      const sequence = [0, 140, 280, 420];
+      sequence.forEach((t, index) => {
+        setTimeout(() => {
+          purpleEyeNodes.forEach((eye) => {
+            eye.style.height = (index % 2 === 0) ? "2px" : "18px";
+          });
+        }, t);
+      });
+    }
+
+    function triggerConfettiBurst() {
+      confettiLayer.innerHTML = "";
+      const colors = ["#93c5fd", "#bfdbfe", "#dbeafe", "#5f7fa5", "#8da6c4"];
+      for (let i = 0; i < 28; i += 1) {
+        const dot = document.createElement("span");
+        dot.className = "confetti-dot";
+        dot.style.left = "50%";
+        dot.style.top = "48%";
+        dot.style.background = colors[i % colors.length];
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 120 + Math.random() * 150;
+        dot.style.setProperty("--dx", `${Math.cos(angle) * radius}px`);
+        dot.style.setProperty("--dy", `${Math.sin(angle) * radius}px`);
+        dot.style.animation = `confettiPop 1s ease-out forwards`;
+        confettiLayer.appendChild(dot);
+      }
+      setTimeout(() => { confettiLayer.innerHTML = ""; }, 1100);
+    }
+
+    function nowMs() {
+      return Date.now();
+    }
+
+    function canTriggerCharacter(id) {
+      const now = nowMs();
+      const cooldownUntil = cooldownMap.get(id) || 0;
+      return now >= cooldownUntil;
+    }
+
+    function setCharacterCooldown(id, ms) {
+      cooldownMap.set(id, nowMs() + ms);
+    }
+
+    function registerClickForEaster(id) {
+      const now = nowMs();
+      while (clickHistory.length && now - clickHistory[0].time > EASTER_WINDOW_MS) {
+        clickHistory.shift();
+      }
+      clickHistory.push({ id, time: now });
+      const uniqueIds = new Set(clickHistory.map((entry) => entry.id));
+      return uniqueIds.size >= 3;
+    }
+
+    function triggerEasterEgg() {
+      if (!ACTIVE_EASTER_EGG) return;
+      const now = nowMs();
+      if (now < easterCooldownUntil) return;
+      easterCooldownUntil = now + EASTER_COOLDOWN_MS;
+      clickHistory.length = 0;
+      playTransientAnimation(
+        "easterEgg",
+        1000,
+        () => {
+          leftPane.classList.add("easter-pulse");
+          forcedLookUntil = nowMs() + 1000;
+          forcedLook = { x: 0, y: -6 };
+          triggerConfettiBurst();
+        },
+        () => {
+          leftPane.classList.remove("easter-pulse");
+          forcedLookUntil = 0;
+          updateCharacters();
+        }
+      );
+    }
+
+    function startCharacterClickAnimation(id, clientX, clientY) {
+      if (!canTriggerCharacter(id)) return;
+      setCharacterCooldown(id, CLICK_COOLDOWN_MS);
+
+      if (id === "purple" && !isAnimActive("purpleClick")) {
+        playTransientAnimation(
+          "purpleClick",
+          900,
+          () => {
+            purple.style.animation = "purpleClickPose 900ms ease-out forwards, purpleGlow 900ms ease-out forwards";
+            triggerPurpleDoubleBlink();
+          },
+          () => {
+            purple.style.animation = "";
+            updateCharacters();
+          }
+        );
+      }
+
+      if (id === "black" && !isAnimActive("blackClick")) {
+        playTransientAnimation(
+          "blackClick",
+          800,
+          () => {
+            const rect = black.getBoundingClientRect();
+            const dirX = clientX - (rect.left + rect.width / 2);
+            const dirY = clientY - (rect.top + rect.height / 2);
+            forcedLookUntil = nowMs() + 780;
+            forcedLook = { x: Math.max(-5, Math.min(5, dirX / 20)), y: Math.max(-5, Math.min(5, dirY / 20)) };
+            blackBubble.classList.add("show");
+            black.style.animation = "blackLeanBack 800ms ease-out forwards";
+          },
+          () => {
+            black.style.animation = "";
+            blackBubble.classList.remove("show");
+            forcedLookUntil = 0;
+            updateCharacters();
+          }
+        );
+      }
+
+      if (id === "orange" && !isAnimActive("orangeClick")) {
+        playTransientAnimation(
+          "orangeClick",
+          700,
+          () => {
+            orange.style.animation = "orangeBounce 700ms ease-out forwards";
+            orangeRipple.style.animation = "orangeRipple 700ms ease-out forwards";
+          },
+          () => {
+            orange.style.animation = "";
+            orangeRipple.style.animation = "";
+            updateCharacters();
+          }
+        );
+      }
+
+      if (id === "yellow" && !isAnimActive("yellowClick")) {
+        playTransientAnimation(
+          "yellowClick",
+          1000,
+          () => {
+            yellowMouth.style.animation = "yellowSmile 1000ms ease-out forwards";
+          },
+          () => {
+            yellowMouth.style.animation = "";
+            updateCharacters();
+          }
+        );
+      }
+
+      if (registerClickForEaster(id)) {
+        triggerEasterEgg();
+      }
+    }
+
+    function bindCharacterInteraction(node, id) {
+      node.addEventListener("click", (event) => {
+        startCharacterClickAnimation(id, event.clientX, event.clientY);
+      });
+      node.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        const rect = node.getBoundingClientRect();
+        startCharacterClickAnimation(id, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+    }
+
+    function updateCharacters() {
+      const purplePos = calculatePosition(purple);
+      const blackPos = calculatePosition(black);
+      const yellowPos = calculatePosition(yellow);
+      const orangePos = calculatePosition(orange);
+      const passwordLength = passwordInput.value.length;
+      const isHidingPassword = passwordLength > 0 && !showPassword;
+      const clickAnimating =
+        isAnimActive("purpleClick") ||
+        isAnimActive("blackClick") ||
+        isAnimActive("orangeClick") ||
+        isAnimActive("yellowClick") ||
+        isAnimActive("easterEgg");
+      const forcedLookActive = nowMs() < forcedLookUntil;
+
+      purple.style.height = (isTyping || isHidingPassword) ? "440px" : "400px";
+      const purpleBaseTransform = (passwordLength > 0 && showPassword)
+        ? "skewX(0deg)"
+        : ((isTyping || isHidingPassword) ? `skewX(${purplePos.bodySkew - 12}deg) translateX(40px)` : `skewX(${purplePos.bodySkew}deg)`);
+      purple.style.setProperty("--char-base-transform", purpleBaseTransform);
+      purple.style.setProperty("--char-base-skew", `skewX(${purplePos.bodySkew}deg)`);
+      if (!isAnimActive("purpleClick")) {
+        purple.style.transform = purpleBaseTransform;
+      }
+
+      const blackBaseTransform = (passwordLength > 0 && showPassword)
+        ? "skewX(0deg)"
+        : (isLookingAtEachOther
+            ? `skewX(${blackPos.bodySkew * 1.5 + 10}deg) translateX(20px)`
+            : ((isTyping || isHidingPassword) ? `skewX(${blackPos.bodySkew * 1.5}deg)` : `skewX(${blackPos.bodySkew}deg)`));
+      black.style.setProperty("--char-base-transform", blackBaseTransform);
+      black.style.setProperty("--char-base-skew", `skewX(${blackPos.bodySkew}deg)`);
+      if (!isAnimActive("blackClick")) {
+        black.style.transform = blackBaseTransform;
+      }
+
+      const orangeBaseTransform = (passwordLength > 0 && showPassword) ? "skewX(0deg)" : `skewX(${orangePos.bodySkew}deg)`;
+      const yellowBaseTransform = (passwordLength > 0 && showPassword) ? "skewX(0deg)" : `skewX(${yellowPos.bodySkew}deg)`;
+      orange.style.setProperty("--char-base-transform", orangeBaseTransform);
+      orange.style.setProperty("--char-base-skew", `skewX(${orangePos.bodySkew}deg)`);
+      yellow.style.setProperty("--char-base-transform", yellowBaseTransform);
+      yellow.style.setProperty("--char-base-skew", `skewX(${yellowPos.bodySkew}deg)`);
+      if (!isAnimActive("orangeClick")) {
+        orange.style.transform = orangeBaseTransform;
+      }
+      if (!isAnimActive("yellowClick")) {
+        yellow.style.transform = yellowBaseTransform;
+      }
+
+      if (!clickAnimating) {
+        purpleEyes.style.left = (passwordLength > 0 && showPassword) ? "20px" : (isLookingAtEachOther ? "55px" : `${45 + purplePos.faceX}px`);
+        purpleEyes.style.top = (passwordLength > 0 && showPassword) ? "35px" : (isLookingAtEachOther ? "65px" : `${40 + purplePos.faceY}px`);
+        blackEyes.style.left = (passwordLength > 0 && showPassword) ? "10px" : (isLookingAtEachOther ? "32px" : `${26 + blackPos.faceX}px`);
+        blackEyes.style.top = (passwordLength > 0 && showPassword) ? "28px" : (isLookingAtEachOther ? "12px" : `${32 + blackPos.faceY}px`);
+        orangeEyes.style.left = (passwordLength > 0 && showPassword) ? "50px" : `${82 + orangePos.faceX}px`;
+        orangeEyes.style.top = (passwordLength > 0 && showPassword) ? "85px" : `${90 + orangePos.faceY}px`;
+        yellowEyes.style.left = (passwordLength > 0 && showPassword) ? "20px" : `${52 + yellowPos.faceX}px`;
+        yellowEyes.style.top = (passwordLength > 0 && showPassword) ? "35px" : `${40 + yellowPos.faceY}px`;
+        yellowMouth.style.left = (passwordLength > 0 && showPassword) ? "10px" : `${40 + yellowPos.faceX}px`;
+        yellowMouth.style.top = (passwordLength > 0 && showPassword) ? "88px" : `${88 + yellowPos.faceY}px`;
+      }
+
+      purplePupils.forEach((pupil, idx) => {
+        movePupil(
+          pupil,
+          purpleEyeNodes[idx],
+          5,
+          forcedLookActive ? forcedLook.x : ((passwordLength > 0 && showPassword) ? (isPurplePeeking ? 4 : -4) : (isLookingAtEachOther ? 3 : undefined)),
+          forcedLookActive ? forcedLook.y : ((passwordLength > 0 && showPassword) ? (isPurplePeeking ? 5 : -4) : (isLookingAtEachOther ? 4 : undefined))
+        );
+      });
+
+      blackPupils.forEach((pupil, idx) => {
+        movePupil(
+          pupil,
+          blackEyeNodes[idx],
+          4,
+          forcedLookActive ? forcedLook.x : ((passwordLength > 0 && showPassword) ? -4 : (isLookingAtEachOther ? 0 : undefined)),
+          forcedLookActive ? forcedLook.y : ((passwordLength > 0 && showPassword) ? -4 : (isLookingAtEachOther ? -4 : undefined))
+        );
+      });
+
+      orangeDots.forEach((dot) => moveDot(dot, (passwordLength > 0 && showPassword) ? -5 : undefined, (passwordLength > 0 && showPassword) ? -4 : undefined));
+      yellowDots.forEach((dot) => moveDot(dot, (passwordLength > 0 && showPassword) ? -5 : undefined, (passwordLength > 0 && showPassword) ? -4 : undefined));
+    }
+
+    togglePassword.addEventListener("click", () => {
+      const visible = passwordInput.type === "password";
+      passwordInput.type = visible ? "text" : "password";
+      showPassword = visible;
+      togglePassword.textContent = visible ? "隐藏" : "显示";
+      schedulePurplePeek();
+      updateCharacters();
+    });
+
+    emailInput.addEventListener("focus", () => setTypingState(true));
+    emailInput.addEventListener("blur", () => setTypingState(false));
+    passwordInput.addEventListener("input", () => {
+      schedulePurplePeek();
+      updateCharacters();
+    });
+    bindCharacterInteraction(purple, "purple");
+    bindCharacterInteraction(black, "black");
+    bindCharacterInteraction(orange, "orange");
+    bindCharacterInteraction(yellow, "yellow");
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email) {
+        focusAndFlashInput(emailInput);
+        setError(emailError, "请输入有效的邮箱地址。");
+        return;
+      }
+      if (!password) {
+        focusAndFlashInput(passwordInput);
+        setError(passwordError, "密码至少需要 6 位。");
+        return;
+      }
+
+      if (!validateForm(email, password)) return;
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = "登录中...";
+      setError(loginError, "");
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        routeToDashboard();
+      } catch (err) {
+        setError(loginError, err?.message || "邮箱或密码错误，请重试。");
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "登录";
+      }
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      updateCharacters();
+    });
+
+    scheduleBlink(purpleEyeNodes);
+    scheduleBlink(blackEyeNodes);
+    updateCharacters();
+  </script>
+</body>
+</html>
